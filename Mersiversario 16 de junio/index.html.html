@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>feliz mesiversario mi amor :3</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { background:#000; overflow:hidden; font-family:Arial,sans-serif }
+    canvas { position:fixed; top:0; left:0; z-index:0; }
+  </style>
+</head>
+<body>
+  <canvas></canvas>
+  <audio id="miMusica" src="sweetntg.mp3" preload="auto"></audio>
+  <script>
+    // Lluvia de "Te Amo" + explosión de MUCHAS letras al hacer clic
+    const canvas = document.querySelector('canvas');
+    const cxt = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+    let text = 'Te Amo';
+    let fontSize = 26;
+    let columns = Math.floor(width / (fontSize * 2.5));
+    let drops = new Array(columns).fill(1);
+    let speed = 8;
+    let color = "#FF69B4";
+    let frameCount = 0;
+    let clickTexts = [];
+    let explosions = [];
+
+    function showTextRain() {
+      cxt.fillStyle = "rgba(0,0,0,0.05)";
+      cxt.fillRect(0, 0, width, height);
+      cxt.fillStyle = color;
+      cxt.font = fontSize + "px Arial";
+      for (let i = 0; i < drops.length; i++) {
+        let x = i * fontSize * 2.5;
+        let y = drops[i] * fontSize;
+        cxt.fillText(text, x, y);
+        if (y > height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    }
+
+    function showClickTexts() {
+      for (let i = clickTexts.length - 1; i >= 0; i--) {
+        let t = clickTexts[i];
+        let now = Date.now();
+        let elapsed = now - t.startTime;
+        if (!t.exploded && elapsed < 500) {
+          // Mostrar el texto grande durante 0.5s
+          cxt.save();
+          cxt.globalAlpha = 1;
+          cxt.fillStyle = color;
+          cxt.font = t.size + "px Arial";
+          cxt.textAlign = "center";
+          cxt.textBaseline = "middle";
+          cxt.fillText(text, t.x, t.y);
+          cxt.restore();
+        } else if (!t.exploded && elapsed >= 500) {
+          // Cuando termina el tiempo, lanza la explosión
+          createTextExplosion(t.x, t.y, color, t.size);
+          t.exploded = true;
+        }
+        // Eliminar el objeto después de explotar
+        if (t.exploded) clickTexts.splice(i, 1);
+      }
+    }
+
+    function createTextExplosion(x, y, color, size) {
+      let chars = text.split('');
+      for (let i = 0; i < 30; i++) { // 30 partículas
+        let angle = Math.random() * 2 * Math.PI;
+        let speed = Math.random() * 1.2 + 0.8; // Mucho más lento
+        let char = chars[Math.floor(Math.random() * chars.length)];
+        explosions.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          alpha: 1,
+          char: char,
+          color: color,
+          size: size * 0.5 // igual que el original
+        });
+      }
+    }
+
+    function showExplosions() {
+      for (let i = explosions.length - 1; i >= 0; i--) {
+        let p = explosions[i];
+
+        // Dibuja la letra
+        cxt.save();
+        cxt.globalAlpha = p.alpha * 0.6; // Más oscuro, menos saturado
+        cxt.font = p.size + "px Arial";
+        cxt.fillStyle = p.color;
+        cxt.fillText(p.char, p.x, p.y);
+        cxt.restore();
+
+        // Actualiza posición y opacidad
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.006; // Desvanecimiento mucho más lento
+
+        // Elimina si se desvanece
+        if (p.alpha <= 0) {
+          explosions.splice(i, 1);
+        }
+      }
+    }
+
+    function animate() {
+      frameCount++;
+      if (frameCount >= 11 - speed) {
+        showTextRain();
+        showClickTexts();
+        showExplosions();
+        frameCount = 0;
+      } else {
+        showClickTexts();
+        showExplosions();
+      }
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      columns = Math.floor(width / (fontSize * 2.5));
+      drops = new Array(columns).fill(1);
+    });
+
+    const audio = document.getElementById('miMusica');
+    canvas.addEventListener('click', function(e) {
+      let rect = canvas.getBoundingClientRect();
+      let x = e.clientX - rect.left;
+      let y = e.clientY - rect.top;
+      clickTexts.push({
+        x: x,
+        y: y,
+        size: 40,
+        startTime: Date.now(),
+        exploded: false
+      });
+      audio.play();
+    });
+
+    animate();
+  </script>
+</body>
+</html>
